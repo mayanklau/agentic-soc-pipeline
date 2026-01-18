@@ -1,0 +1,227 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-soc-pipeline"
+version = "0.1.0"
+description = "Unified AI-powered Security Operations Center pipeline with specialized agents and multi-tier memory"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Your Organization", email = "security@example.com"}
+]
+keywords = [
+    "security",
+    "soc",
+    "ai",
+    "llm",
+    "cybersecurity",
+    "siem",
+    "edr",
+    "threat-detection",
+    "incident-response"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Monitoring",
+]
+
+dependencies = [
+    # Core
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=23.2.0",
+    "rich>=13.7.0",
+    
+    # Async
+    "anyio>=4.2.0",
+    "httpx>=0.26.0",
+    "aiofiles>=23.2.1",
+    
+    # API
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "websockets>=12.0",
+    
+    # Data Processing
+    "kafka-python>=2.0.2",
+    "aiokafka>=0.10.0",
+    "pandas>=2.1.0",
+    "pyarrow>=15.0.0",
+    "polars>=0.20.0",
+    
+    # AI/ML
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.20",
+    "langgraph>=0.0.20",
+    "openai>=1.10.0",
+    "ollama>=0.1.6",
+    "transformers>=4.37.0",
+    "sentence-transformers>=2.3.0",
+    
+    # Vector Store
+    "chromadb>=0.4.22",
+    "pinecone-client>=3.0.0",
+    
+    # Graph Database
+    "neo4j>=5.16.0",
+    
+    # Cache/State
+    "redis>=5.0.1",
+    "hiredis>=2.3.2",
+    
+    # Database
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    
+    # Monitoring
+    "prometheus-client>=0.19.0",
+    "opentelemetry-api>=1.22.0",
+    "opentelemetry-sdk>=1.22.0",
+    "opentelemetry-instrumentation-fastapi>=0.43b0",
+    
+    # Security Integrations
+    "python-stix2>=3.0.1",
+    "taxii2-client>=2.3.0",
+    "yara-python>=4.5.0",
+    
+    # Utilities
+    "croniter>=2.0.1",
+    "tenacity>=8.2.3",
+    "orjson>=3.9.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.4",
+    "pytest-asyncio>=0.23.3",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "hypothesis>=6.92.0",
+    "black>=24.1.0",
+    "ruff>=0.1.14",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "ipython>=8.20.0",
+    "types-redis>=4.6.0",
+]
+
+docs = [
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.5.4",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+spark = [
+    "pyspark>=3.5.0",
+    "delta-spark>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/agentic-soc-pipeline"
+Documentation = "https://your-org.github.io/agentic-soc-pipeline"
+Repository = "https://github.com/your-org/agentic-soc-pipeline"
+Issues = "https://github.com/your-org/agentic-soc-pipeline/issues"
+
+[project.scripts]
+agentic-soc = "src.main:main"
+soc-cli = "src.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "ARG",  # flake8-unused-arguments
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by black)
+    "B008",   # do not perform function calls in argument defaults
+    "B904",   # raise without from inside except
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["ARG001"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "kafka.*",
+    "chromadb.*",
+    "neo4j.*",
+    "yara.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = ["*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

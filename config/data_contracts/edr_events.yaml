@@ -1,0 +1,165 @@
+# EDR Events Data Contract
+# Defines the expectations between EDR integration and consuming agents
+
+contract:
+  name: edr_endpoint_events
+  version: "1.0.0"
+  producer: crowdstrike_integration
+  consumers:
+    - triage_agent
+    - malware_agent
+    - threat_intel_agent
+  
+  description: |
+    Endpoint Detection and Response events from CrowdStrike.
+    These events represent security-relevant activity on monitored endpoints.
+  
+  schema:
+    required_fields:
+      event_id:
+        type: uuid
+        description: Unique identifier for the event
+      timestamp:
+        type: iso8601
+        description: When the event occurred
+      hostname:
+        type: string
+        description: Name of the endpoint
+      event_type:
+        type: string
+        description: Category of the event
+      severity:
+        type: enum
+        values: [low, medium, high, critical]
+        description: Severity level assigned by EDR
+    
+    optional_fields:
+      process_name:
+        type: string
+        description: Name of the process involved
+      process_path:
+        type: string
+        description: Full path to the process executable
+      process_hash:
+        type: sha256
+        description: SHA256 hash of the process
+      process_command_line:
+        type: string
+        description: Full command line arguments
+      parent_process_name:
+        type: string
+        description: Name of parent process
+      parent_process_hash:
+        type: sha256
+        description: SHA256 hash of parent process
+      user:
+        type: string
+        description: User context for the event
+      source_ip:
+        type: ipv4
+        description: Source IP if network-related
+      destination_ip:
+        type: ipv4
+        description: Destination IP if network-related
+      destination_port:
+        type: integer
+        description: Destination port if network-related
+      file_path:
+        type: string
+        description: File path if file-related
+      file_hash:
+        type: sha256
+        description: SHA256 hash of file
+      mitre_tactic:
+        type: string
+        description: MITRE ATT&CK tactic
+      mitre_technique:
+        type: string
+        description: MITRE ATT&CK technique ID
+  
+  quality_rules:
+    completeness:
+      - field: event_id
+        rule: not_null
+        severity: critical
+      - field: timestamp
+        rule: not_null
+        severity: critical
+      - field: hostname
+        rule: not_null
+        severity: error
+      - field: event_type
+        rule: not_null
+        severity: error
+    
+    validity:
+      - field: severity
+        rule: in_set
+        values: [low, medium, high, critical]
+        severity: error
+      - field: event_type
+        rule: in_set
+        values:
+          - ProcessCreate
+          - ProcessTerminate
+          - FileCreate
+          - FileModify
+          - FileDelete
+          - NetworkConnect
+          - RegistryModify
+          - DnsQuery
+          - ImageLoad
+          - Detection
+        severity: warning
+    
+    freshness:
+      field: timestamp
+      max_delay_seconds: 300
+      severity: warning
+    
+    custom_rules:
+      - name: hash_format_valid
+        description: Process hash must be valid SHA256 when present
+        field: process_hash
+        rule: regex
+        pattern: "^[a-fA-F0-9]{64}$"
+        severity: warning
+        apply_when_present: true
+  
+  sla:
+    availability: 99.5%
+    latency_p95_seconds: 30
+    latency_p99_seconds: 60
+    max_batch_delay_seconds: 300
+  
+  on_violation:
+    actions:
+      - type: alert
+        channel: slack
+        destination: "#soc-data-quality"
+        template: |
+          :warning: Data Contract Violation: {{ contract_name }}
+          Rule: {{ rule_name }}
+          Severity: {{ severity }}
+          Details: {{ details }}
+      
+      - type: metric
+        name: contract_violation_total
+        labels:
+          contract: edr_endpoint_events
+          rule: "{{ rule_name }}"
+          severity: "{{ severity }}"
+    
+    escalation:
+      after_minutes: 15
+      destination: pagerduty
+      severity_threshold: critical
+    
+    halt_pipeline: false
+    
+  metadata:
+    owner: security-engineering
+    slack_channel: "#edr-integration"
+    documentation: https://wiki.example.com/edr-events-contract
+    last_updated: "2024-01-15"
+    review_schedule: quarterly
